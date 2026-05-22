@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Royal Felt Blackjack Club - AI Multiplayer</title>
+<p>NOS Royal Felt Blackjack Club © | All Rights Reserved</p>
+<p>Made by Aarav Sachdeva, founder and CEO of NOS</p>                                                                                      <p>(NOTE ALL MONEY USED IN THE GAME IS FAKE)</p>
+    <!-- Tailwind CSS for rich modern layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons for beautiful clean indicators -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts for premium serif typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        .serif-title {
+            font-family: 'Cinzel', serif;
+        }
+        /* Casino felt texture simulation */
+        .casino-felt {
+            background-color: #0d5135;
+            background-image: radial-gradient(circle at 50% 50%, #116844 0%, #073522 100%);
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+        }
+        /* 3D Flip Card animations */
+        .card-container {
+            perspective: 1000px;
+            width: 55px;
+            height: 82px;
+        }
+        @media (min-width: 640px) {
+            .card-container {
+                width: 70px;
+                height: 105px;
+            }
+        }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+        .card-inner.flipped {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+        .card-front {
+            background-color: white;
+            color: black;
+            transform: rotateY(180deg);
+        }
+        .card-back {
+            background-color: #1a202c;
+            border: 2px solid #d4af37;
+            background-image: radial-gradient(#d4af37 20%, transparent 20%),
+                              radial-gradient(#d4af37 20%, transparent 20%);
+            background-size: 6px 6px;
+            background-position: 0 0, 3px 3px;
+        }
+        /* Dealing slide animation */
+        @keyframes dealIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-50px) rotate(-15deg) scale(0.6);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) rotate(0deg) scale(1);
+            }
+        }
+        .animate-deal {
+            animation: dealIn 0.35s ease-out forwards;
+        }
+        /* Gold neon glowing text & shadows */
+        .gold-glow {
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.6), 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+        .active-seat-glow {
+            box-shadow: 0 0 20px rgba(234, 179, 8, 0.45);
+            border-color: rgba(234, 179, 8, 0.9) !important;
+        }
+        /* Chip click bounce */
+        .chip-btn:active {
+            transform: scale(0.9);
+        }
+        /* Custom scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.3);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="text-white min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <header class="bg-gray-900 border-b border-yellow-600/30 px-4 py-3 flex justify-between items-center shadow-lg relative z-20">
+        <div class="flex items-center gap-2">
+            <span class="text-yellow-500"><i data-lucide="crown" class="w-6 h-6"></i></span>
+            <h1 class="serif-title text-lg md:text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-500 to-amber-600 gold-glow">
+                Royal Felt
+            </h1>
+            <span class="text-xs text-yellow-500/80 bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded uppercase tracking-widest hidden xs:inline-block">
+                AI Table Simulator
+            </span>
+        </div>
+        
+        <div class="flex items-center gap-1.5 sm:gap-3">
+            <button id="lobby-btn" class="hidden text-gray-400 hover:text-white transition flex items-center gap-1 text-xs sm:text-sm bg-gray-800 border border-gray-700 hover:border-yellow-500/50 px-2.5 py-1 rounded">
+                <i data-lucide="users" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+                <span>Lobby</span>
+            </button>
+            <button id="rules-btn" class="text-gray-400 hover:text-white transition flex items-center gap-1 text-xs sm:text-sm bg-gray-800 border border-gray-700 hover:border-yellow-500/50 px-2.5 py-1 rounded">
+                <i data-lucide="help-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+                <span class="hidden sm:inline">Rules</span>
+            </button>
+            <button id="stats-btn" class="text-gray-400 hover:text-white transition flex items-center gap-1 text-xs sm:text-sm bg-gray-800 border border-gray-700 hover:border-yellow-500/50 px-2.5 py-1 rounded">
+                <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+                <span class="hidden sm:inline">Stats</span>
+            </button>
+            <button id="mute-btn" class="text-gray-400 hover:text-white transition p-1.5 bg-gray-800 border border-gray-700 rounded hover:border-yellow-500/50">
+                <i id="mute-icon" data-lucide="volume-2" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- MULTIPLAYER LOBBY SCREEN -->
+    <div id="lobby-screen" class="flex-grow flex flex-col items-center justify-center p-4 sm:p-6 bg-slate-950/95 relative z-10">
+        <div class="max-w-2xl w-full bg-gray-900/80 border border-yellow-500/30 p-5 sm:p-8 rounded-2xl shadow-2xl backdrop-blur-md">
+            <div class="text-center mb-6 sm:mb-8">
+                <span class="text-yellow-500 inline-block mb-2 animate-bounce"><i data-lucide="club" class="w-10 h-10 sm:w-12 sm:h-12"></i></span>
+                <h2 class="serif-title text-2xl sm:text-3xl font-bold text-yellow-500 gold-glow tracking-widest mb-2">TABLE SETUP</h2>
+                <p class="text-gray-400 text-xs sm:text-sm">Configure humans and smart AI bots to populate the table</p>
+            </div>
+
+            <!-- Number of players configuration -->
+            <div class="mb-5 sm:mb-6">
+                <label class="block text-xs uppercase tracking-wider text-yellow-500/80 font-bold mb-3">Number of Active Seats</label>
+                <div class="grid grid-cols-6 gap-2">
+                    <button type="button" data-seats="1" class="seat-select-btn py-2.5 sm:py-3 rounded-lg border font-bold text-base sm:text-lg bg-gray-800 hover:bg-gray-700 border-gray-700">1</button>
+                    <button type="button" data-seats="2" class="seat-select-btn py-2.5 sm:py-3 rounded-lg border font-bold text-base sm:text-lg bg-gray-800 hover:bg-gray-700 border-gray-700">2</button>
+                    <button type="button" data-seats="3" class="seat-select-btn py-2.5 sm:py-3 rounded-lg border font-bold text-base sm:text-lg bg-yellow-500 text-black border-yellow-500">3</button>
+                    <button type="button" data-seats="4" class="seat-select-btn py-2.5 sm:py-3 rounded-lg border font-bold text-base sm:text-lg bg-gray-800 hover:bg-gray-700 border-gray-700">4</button>
+                    <button type="button" data-seats="5" class="seat-select-btn py-2.5 sm:py-3 rounded-lg border font-bold text-base sm:text-lg bg-gray-800 hover:bg-gray-700 border-gray-700">5</button>
+                    <button type="button" data-seats="6" class="seat-select-btn py-2.5 sm:py-3 rounded-lg border font-bold text-base sm:text-lg bg-gray-800 hover:bg-gray-700 border-gray-700">6</button>
+                </div>
+            </div>
+
+            <!-- Custom player names & bot toggles -->
+            <div class="mb-6 sm:mb-8">
+                <label class="block text-xs uppercase tracking-wider text-yellow-500/80 font-bold mb-3">Player / Bot Roster Details</label>
+                <div id="player-inputs-container" class="space-y-3 max-h-[250px] sm:max-h-[300px] overflow-y-auto custom-scroll pr-2">
+                    <!-- Dynamic inputs injected here with Human/Bot selectors -->
+                </div>
+            </div>
+
+            <button id="start-game-btn" class="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-black font-extrabold py-3.5 sm:py-4 rounded-xl shadow-lg shadow-yellow-500/20 text-center uppercase tracking-widest text-base sm:text-lg transition duration-200">
+                Open Table & Deal
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN GAME ARENA -->
+    <main id="game-screen" class="hidden flex-grow casino-felt flex flex-col justify-between relative p-3 sm:p-4 lg:p-6 overflow-hidden min-h-[500px] select-none">
+        
+        <!-- Background markings -->
+        <div class="absolute inset-0 flex flex-col justify-center items-center pointer-events-none opacity-[0.06] select-none">
+            <div class="border-2 border-yellow-500 rounded-full w-[80vw] h-[80vw] max-w-[500px] max-h-[500px] flex items-center justify-center">
+                <div class="text-center">
+                    <div class="serif-title text-2xl sm:text-3xl font-bold uppercase tracking-widest text-yellow-500">Blackjack</div>
+                    <div class="text-xs sm:text-sm tracking-wider mt-2">Dealer Must Hit Soft 17</div>
+                    <div class="text-[10px] sm:text-xs tracking-widest mt-1">Pays 3 to 2</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upper Info bar (Remaining shoe cards) -->
+        <div class="w-full flex justify-between items-start z-10 text-xs sm:text-sm text-yellow-500/80 relative">
+            <div class="bg-black/50 border border-yellow-600/20 px-2.5 py-1 rounded flex items-center gap-1.5 backdrop-blur-sm">
+                <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                <span>Shoe: <strong id="cards-remaining" class="text-white">312</strong> cards</span>
+            </div>
+            
+            <div id="dealer-indicator-badge" class="bg-black/50 border border-yellow-600/20 px-2.5 py-1 rounded flex items-center gap-1.5 backdrop-blur-sm">
+                <span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                <span id="game-stage-indicator" class="text-white font-semibold">Place Bets</span>
+            </div>
+        </div>
+
+        <!-- DEALER HAND ZONE -->
+        <div class="w-full flex flex-col items-center gap-1.5 mt-2 z-10">
+            <div class="flex items-center gap-1.5">
+                <span class="text-[10px] tracking-widest uppercase text-yellow-500/70 font-bold">Dealer's Hand</span>
+                <span id="dealer-score" class="bg-black/60 border border-yellow-500/30 text-yellow-300 px-1.5 py-0.5 rounded text-[11px] font-semibold">0</span>
+            </div>
+            <div id="dealer-cards" class="flex justify-center gap-2 min-h-[82px] sm:min-h-[105px] transition-all">
+                <!-- Dealer cards dynamic -->
+            </div>
+        </div>
+
+        <!-- ACTION BANNER (Turn indicator / Toast alerts) -->
+        <div class="w-full flex justify-center py-1.5 z-10 my-1">
+            <div id="game-status-banner" class="bg-black/85 border border-yellow-500/40 px-4 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs md:text-sm font-medium tracking-wide flex items-center gap-2 shadow-xl backdrop-blur-md transition-all duration-300">
+                <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-yellow-500 animate-ping"></span>
+                <span id="banner-text">Welcome! Place your bets to join the hand.</span>
+            </div>
+        </div>
+
+        <!-- MULTI-PLAYER GRID SEATS (Supports 1 to 6 players/bots) -->
+        <div id="seats-container" class="w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 lg:gap-4 z-10 mb-2 px-0.5">
+            <!-- Dynamically generated seats inside script -->
+        </div>
+
+    </main>
+
+    <!-- CONTROL & BETTING SECTION -->
+    <footer id="footer-controls" class="hidden bg-gray-900 border-t border-yellow-600/30 z-20">
+        
+        <!-- Active Player Stats bar -->
+        <div class="bg-gray-950/80 px-4 py-2 flex flex-wrap justify-between items-center border-b border-gray-800 text-xs sm:text-sm gap-2">
+            <div class="flex items-center gap-2">
+                <i data-lucide="user" class="w-3.5 h-3.5 text-yellow-500"></i>
+                <span class="text-gray-400">Current Actor:</span>
+                <span id="active-actor-name" class="text-yellow-400 font-extrabold tracking-wide">Player 1</span>
+            </div>
+            
+            <div class="flex items-center gap-3 sm:gap-4">
+                <div class="flex items-center gap-1">
+                    <i data-lucide="wallet" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <span class="text-gray-400">Wallet:</span>
+                    <span id="active-actor-bankroll" class="text-emerald-400 font-bold">$1,000</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <i data-lucide="coins" class="w-3.5 h-3.5 text-yellow-500"></i>
+                    <span class="text-gray-400">Bet:</span>
+                    <span id="active-actor-bet" class="text-yellow-500 font-bold">$0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- BETTING UTILITIES (Visible when placing bets) -->
+        <div id="betting-controls" class="p-3 sm:p-4 flex flex-col items-center gap-2.5">
+            <div class="text-center">
+                <p id="betting-prompt" class="text-[10px] sm:text-xs uppercase tracking-widest text-gray-400">Wager Chips for Player 1</p>
+            </div>
+            
+            <!-- Chip selectors -->
+            <div class="flex flex-wrap justify-center gap-2 sm:gap-3 my-1">
+                <button data-val="5" class="chip-btn relative w-11 h-11 sm:w-14 sm:h-14 rounded-full border-4 border-dashed border-white bg-blue-700 hover:bg-blue-600 flex items-center justify-center font-bold text-xs shadow-xl transition active:scale-90">
+                    <span class="absolute inset-1 rounded-full border border-white/55 flex items-center justify-center bg-blue-800">$5</span>
+                </button>
+                <button data-val="25" class="chip-btn relative w-11 h-11 sm:w-14 sm:h-14 rounded-full border-4 border-dashed border-white bg-green-700 hover:bg-green-600 flex items-center justify-center font-bold text-xs shadow-xl transition active:scale-90">
+                    <span class="absolute inset-1 rounded-full border border-white/55 flex items-center justify-center bg-green-800">$25</span>
+                </button>
+                <button data-val="100" class="chip-btn relative w-11 h-11 sm:w-14 sm:h-14 rounded-full border-4 border-dashed border-white bg-red-700 hover:bg-red-600 flex items-center justify-center font-bold text-xs shadow-xl transition active:scale-90">
+                    <span class="absolute inset-1 rounded-full border border-white/55 flex items-center justify-center bg-red-800">$100</span>
+                </button>
+                <button data-val="500" class="chip-btn relative w-11 h-11 sm:w-14 sm:h-14 rounded-full border-4 border-dashed border-white bg-purple-700 hover:bg-purple-600 flex items-center justify-center font-bold text-xs shadow-xl transition active:scale-90">
+                    <span class="absolute inset-1 rounded-full border border-white/55 flex items-center justify-center bg-purple-800">$500</span>
+                </button>
+                <button id="chip-all-in" class="chip-btn relative w-11 h-11 sm:w-14 sm:h-14 rounded-full border-4 border-dashed border-white bg-amber-600 hover:bg-amber-500 flex items-center justify-center font-extrabold text-[9px] shadow-xl transition active:scale-90">
+                    <span class="absolute inset-1 rounded-full border border-white/55 flex items-center justify-center bg-amber-700">ALL IN</span>
+                </button>
+            </div>
+
+            <!-- Actions to submit wager or move sequence -->
+            <div class="flex gap-3 w-full max-w-md mt-1">
+                <button id="clear-bet-btn" class="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 font-bold py-2.5 rounded transition active:scale-95 text-xs uppercase tracking-wide">
+                    Clear Bet
+                </button>
+                <button id="confirm-bet-btn" class="flex-1 bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold py-2.5 px-4 rounded transition active:scale-95 text-xs uppercase tracking-widest shadow-lg shadow-yellow-500/20">
+                    Confirm Bet
+                </button>
+            </div>
+        </div>
+
+        <!-- CORE GAME ACTION PANELS -->
+        <div id="play-controls" class="hidden p-3 sm:p-4 flex flex-col items-center gap-2.5">
+            <div class="flex flex-wrap justify-center gap-2 w-full max-w-3xl">
+                
+                <!-- Hit -->
+                <button id="hit-btn" class="flex-1 min-w-[80px] sm:min-w-[100px] bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3.5 rounded-lg shadow-lg hover:shadow-blue-500/20 transition active:scale-95 uppercase text-[11px] sm:text-xs tracking-wider flex items-center justify-center gap-1">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Hit
+                </button>
+                
+                <!-- Stand -->
+                <button id="stand-btn" class="flex-1 min-w-[80px] sm:min-w-[100px] bg-amber-500 hover:bg-amber-400 text-black font-extrabold py-3.5 rounded-lg shadow-lg hover:shadow-amber-500/20 transition active:scale-95 uppercase text-[11px] sm:text-xs tracking-wider flex items-center justify-center gap-1">
+                    <i data-lucide="stop-circle" class="w-4 h-4"></i> Stand
+                </button>
+
+                <!-- Double Down -->
+                <button id="double-btn" class="flex-1 min-w-[80px] sm:min-w-[100px] bg-purple-600 hover:bg-purple-500 disabled:bg-gray-800 disabled:text-gray-650 border border-transparent disabled:border-gray-800 text-white font-extrabold py-3.5 rounded-lg shadow-lg hover:shadow-purple-500/20 transition active:scale-95 uppercase text-[11px] sm:text-xs tracking-wider flex items-center justify-center gap-1">
+                    <i data-lucide="trending-up" class="w-4 h-4"></i> Double
+                </button>
+
+                <!-- Split -->
+                <button id="split-btn" class="flex-1 min-w-[80px] sm:min-w-[100px] bg-teal-600 hover:bg-teal-500 disabled:bg-gray-800 disabled:text-gray-650 border border-transparent disabled:border-gray-800 text-white font-extrabold py-3.5 rounded-lg shadow-lg hover:shadow-teal-500/20 transition active:scale-95 uppercase text-[11px] sm:text-xs tracking-wider flex items-center justify-center gap-1">
+                    <i data-lucide="git-branch" class="w-4 h-4"></i> Split
+                </button>
+
+                <!-- Insurance (Only if condition met) -->
+                <button id="insurance-btn" class="hidden flex-1 min-w-[80px] sm:min-w-[100px] bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-300 font-extrabold py-3.5 rounded-lg shadow-lg transition active:scale-95 uppercase text-[10px] tracking-wider flex items-center justify-center gap-1">
+                    <i data-lucide="shield-alert" class="w-4 h-4"></i> Insurance
+                </button>
+
+            </div>
+        </div>
+    </footer>
+
+    <!-- OVERLAYS: MODALS -->
+    
+    <!-- Rules Modal -->
+    <div id="rules-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+        <div class="bg-gray-900 border border-yellow-500/40 rounded-xl max-w-lg w-full max-h-[85vh] overflow-y-auto custom-scroll shadow-2xl">
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                <h3 class="serif-title text-xl font-bold text-yellow-500 flex items-center gap-2">
+                    <i data-lucide="book-open" class="w-5 h-5"></i> Club Rules
+                </h3>
+                <button id="close-rules" class="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-800 transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 text-gray-300 text-sm leading-relaxed">
+                <div>
+                    <h4 class="font-bold text-white uppercase text-xs tracking-wider mb-1">Game Setup</h4>
+                    <p>Played with a 6-deck shoe shuffled frequently. Multiple seats allow humans or smart AI companions to occupy any seat. Dealer hits on soft 17.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white uppercase text-xs tracking-wider mb-1">AI Bot Behavior</h4>
+                    <p>When configured as a "Bot AI", the simulator will calculate bets, split pairs, double down, or stand using standard casino basic strategy instantly on its turn, creating a realistic live table atmosphere.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white uppercase text-xs tracking-wider mb-1">Payouts</h4>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>Blackjack pays <strong class="text-yellow-400">3:2</strong></li>
+                        <li>Standard win pays <strong class="text-yellow-400">1:1</strong></li>
+                        <li>Insurance pays <strong class="text-yellow-400">2:1</strong></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-950/50 border-t border-gray-800 text-center text-xs text-gray-400">
+                Royal Felt Blackjack Club &bull; AI Powered
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Modal -->
+    <div id="stats-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+        <div class="bg-gray-900 border border-yellow-500/40 rounded-xl max-w-md w-full shadow-2xl">
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                <h3 class="serif-title text-xl font-bold text-yellow-500 flex items-center gap-2">
+                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i> Table Statistics
+                </h3>
+                <button id="close-stats" class="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-800 transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-6 grid grid-cols-2 gap-4">
+                <div class="bg-gray-950 p-3 rounded-lg border border-gray-800 text-center">
+                    <p class="text-xs text-gray-400 uppercase tracking-widest">Total Hands Played</p>
+                    <p id="stat-played" class="text-2xl font-bold mt-1 text-white">0</p>
+                </div>
+                <div class="bg-gray-950 p-3 rounded-lg border border-gray-800 text-center">
+                    <p class="text-xs text-gray-400 uppercase tracking-widest">Global Win Rate</p>
+                    <p id="stat-winrate" class="text-2xl font-bold mt-1 text-emerald-400 font-serif">0%</p>
+                </div>
+                <div class="bg-gray-950 p-3 rounded-lg border border-gray-800 text-center">
+                    <p class="text-xs text-gray-400 uppercase tracking-widest">Total Wins</p>
+                    <p id="stat-wins" class="text-xl font-bold mt-1 text-white">0</p>
+                </div>
+                <div class="bg-gray-950 p-3 rounded-lg border border-gray-800 text-center">
+                    <p class="text-xs text-gray-400 uppercase tracking-widest">Total Blackjacks</p>
+                    <p id="stat-bj" class="text-xl font-bold mt-1 text-yellow-400">0</p>
+                </div>
+                <div class="bg-gray-950 p-3 rounded-lg border border-gray-800 text-center col-span-2">
+                    <p class="text-xs text-gray-400 uppercase tracking-widest">Highest Single Bankroll</p>
+                    <p id="stat-high" class="text-xl font-bold mt-1 text-amber-500">$1,000</p>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-950 border-t border-gray-800 flex justify-between gap-3">
+                <button id="reset-stats-btn" class="text-xs text-red-400 hover:text-red-350 bg-red-950/20 border border-red-900/40 py-1.5 px-3 rounded transition hover:bg-red-950/40">
+                    Reset Statistics
+                </button>
+                <button id="close-stats-footer" class="text-xs bg-gray-850 hover:bg-gray-700 text-white py-1.5 px-4 rounded transition">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUDIO & ENGINE SCRIPTS -->
+    <script>
+        // Web Audio Synthesizer Engine
+        const AudioEngine = {
+            ctx: null,
+            muted: false,
+
+            init() {
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                } catch (e) {
+                    console.error("Web Audio not supported", e);
+                }
+            },
+
+            toggleMute() {
+                this.muted = !this.muted;
+                return this.muted;
+            },
+
+            playCard() {
+                if (this.muted || !this.ctx) return;
+                const ctx = this.ctx;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(320, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.12);
+                
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.12);
+            },
+
+            playChip() {
+                if (this.muted || !this.ctx) return;
+                const ctx = this.ctx;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1400, ctx.currentTime);
+                osc.frequency.setValueAtTime(900, ctx.currentTime + 0.04);
+                
+                gain.gain.setValueAtTime(0.06, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.1);
+            },
+
+            playWin() {
+                if (this.muted || !this.ctx) return;
+                const ctx = this.ctx;
+                const notes = [293.66, 369.99, 440.00, 587.33]; // D F# A D
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+                    gain.gain.setValueAtTime(0.04, ctx.currentTime + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.08 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + idx * 0.08);
+                    osc.stop(ctx.currentTime + idx * 0.08 + 0.25);
+                });
+            },
+
+            playLose() {
+                if (this.muted || !this.ctx) return;
+                const ctx = this.ctx;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 0.35);
+                gain.gain.setValueAtTime(0.06, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.35);
+            },
+
+            playShuffle() {
+                if (this.muted || !this.ctx) return;
+                const ctx = this.ctx;
+                for (let i = 0; i < 3; i++) {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(120 + Math.random() * 180, ctx.currentTime + i * 0.07);
+                    gain.gain.setValueAtTime(0.04, ctx.currentTime + i * 0.07);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.07 + 0.07);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + i * 0.07);
+                    osc.stop(ctx.currentTime + i * 0.07 + 0.07);
+                }
+            }
+        };
+
+        // Cards deck configs
+        const Suits = {
+            HEARTS: { icon: '♥', color: 'text-red-600' },
+            DIAMONDS: { icon: '♦', color: 'text-red-600' },
+            CLUBS: { icon: '♣', color: 'text-black' },
+            SPADES: { icon: '♠', color: 'text-black' }
+        };
+
+        const Ranks = {
+            '2': { val: 2 }, '3': { val: 3 }, '4': { val: 4 }, '5': { val: 5 },
+            '6': { val: 6 }, '7': { val: 7 }, '8': { val: 8 }, '9': { val: 9 },
+            '10': { val: 10 }, 'J': { val: 10 }, 'Q': { val: 10 }, 'K': { val: 10 },
+            'A': { val: 11 }
+        };
+
+        let shoe = [];
+        const numDecks = 6;
+
+        function createShoe() {
+            shoe = [];
+            const suitsKeys = Object.keys(Suits);
+            const ranksKeys = Object.keys(Ranks);
+            
+            for (let d = 0; d < numDecks; d++) {
+                for (let s of suitsKeys) {
+                    for (let r of ranksKeys) {
+                        shoe.push({
+                            rank: r,
+                            suit: Suits[s],
+                            value: Ranks[r].val
+                        });
+                    }
+                }
+            }
+            shuffleShoe();
+        }
+
+        function shuffleShoe() {
+            AudioEngine.playShuffle();
+            for (let i = shoe.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shoe[i], shoe[j]] = [shoe[j], shoe[i]];
+            }
+            updateRemainingCardsDisplay();
+        }
+
+        function drawCard() {
+            if (shoe.length < 25) {
+                createShoe();
+                showStatusBanner("Shoe refreshed! Shuffled 6 new decks.");
+            }
+            updateRemainingCardsDisplay();
+            return shoe.pop();
+        }
+
+        function updateRemainingCardsDisplay() {
+            document.getElementById('cards-remaining').innerText = shoe.length;
+        }
+
+        // Multi-player core states
+        let gameState = 'lobby'; // 'lobby', 'betting', 'dealing', 'playing', 'dealer-turn'
+        let numSeats = 3;
+        let players = [];
+        let dealerHand = { cards: [], score: 0, showHole: false };
+        let currentActorIdx = 0; // index of active player during betting or actions
+        
+        // Track seat player-types in lobby config (defaults: Seat 1 human, rest are bot AI)
+        let seatTypes = ['human', 'bot', 'bot', 'bot', 'bot', 'bot'];
+
+        let stats = {
+            played: 0,
+            wins: 0,
+            blackjacks: 0,
+            highestBalance: 1000
+        };
+
+        function loadSaveData() {
+            if (localStorage.getItem('rf_multi_stats')) {
+                stats = JSON.parse(localStorage.getItem('rf_multi_stats'));
+            }
+            updateStatsUI();
+        }
+
+        function saveData() {
+            localStorage.setItem('rf_multi_stats', JSON.stringify(stats));
+        }
+
+        function updateStatsUI() {
+            document.getElementById('stat-played').innerText = stats.played;
+            document.getElementById('stat-wins').innerText = stats.wins;
+            document.getElementById('stat-bj').innerText = stats.blackjacks;
+            document.getElementById('stat-high').innerText = `$${stats.highestBalance.toLocaleString()}`;
+            
+            const winrate = stats.played > 0 ? Math.round((stats.wins / stats.played) * 100) : 0;
+            document.getElementById('stat-winrate').innerText = `${winrate}%`;
+        }
+
+        // Calculate BJ Hand value dynamically with Aces
+        function calculateHandScore(cards) {
+            let total = 0;
+            let aces = 0;
+            
+            for (let card of cards) {
+                total += card.value;
+                if (card.rank === 'A') aces++;
+            }
+            
+            while (total > 21 && aces > 0) {
+                total -= 10;
+                aces--;
+            }
+            
+            return total;
+        }
+
+        // Card HTML Builder (custom size suitable for up to 6 players)
+        function generateCardMarkup(card, isHoleCard = false, uniqueId = "") {
+            if (isHoleCard) {
+                return `
+                <div class="card-container animate-deal">
+                    <div class="card-inner" id="hole-${uniqueId}">
+                        <div class="card-back"></div>
+                        <div class="card-front flex flex-col justify-between p-1 border border-yellow-500/30">
+                            <!-- Injected dynamically on reveal -->
+                        </div>
+                    </div>
+                </div>
+                `;
+            }
+
+            const isRed = card.suit.color === 'text-red-600';
+            const val = card.rank;
+            const suit = card.suit.icon;
+
+            return `
+            <div class="card-container animate-deal">
+                <div class="card-inner flipped">
+                    <div class="card-front flex flex-col justify-between p-1 shadow-md border border-gray-250">
+                        <div class="flex justify-between items-center leading-none">
+                            <span class="text-xs font-bold ${card.suit.color}">${val}</span>
+                            <span class="text-xs ${card.suit.color}">${suit}</span>
+                        </div>
+                        <div class="text-center text-xl sm:text-2xl ${card.suit.color} select-none">
+                            ${suit}
+                        </div>
+                        <div class="flex justify-between items-center rotate-180 leading-none">
+                            <span class="text-xs font-bold ${card.suit.color}">${val}</span>
+                            <span class="text-xs ${card.suit.color}">${suit}</span>
+                        </div>
+                    </div>
+                    <div class="card-back"></div>
+                </div>
+            </div>
+            `;
+        }
+
+        function fillHoleCardMarkup(card, uniqueId) {
+            const el = document.getElementById(`hole-${uniqueId}`);
+            if (!el) return;
+            
+            const front = el.querySelector('.card-front');
+            front.innerHTML = `
+                <div class="flex justify-between items-center leading-none">
+                    <span class="text-xs font-bold ${card.suit.color}">${card.rank}</span>
+                    <span class="text-xs ${card.suit.color}">${card.suit.icon}</span>
+                </div>
+                <div class="text-center text-xl sm:text-2xl ${card.suit.color} select-none">
+                    ${card.suit.icon}
+                </div>
+                <div class="flex justify-between items-center rotate-180 leading-none">
+                    <span class="text-xs font-bold ${card.suit.color}">${card.rank}</span>
+                    <span class="text-xs ${card.suit.color}">${card.suit.icon}</span>
+                </div>
+            `;
+            front.className = "card-front flex flex-col justify-between p-1.5 shadow-md border border-gray-250";
+        }
+
+        // Simplified Basic Strategy algorithm for automatic AI choices
+        function getBotDecision(hand, dealerCard, player) {
+            const score = hand.score;
+            const dealerVal = dealerCard ? dealerCard.value : 10;
+            const isPair = hand.cards.length === 2 && hand.cards[0].rank === hand.cards[1].rank;
+            const hasAce = hand.cards.some(c => c.rank === 'A');
+
+            // 1. Evaluate Splits first (if wallet allows split wager)
+            if (isPair && player.hands.length === 1 && player.bankroll >= hand.bet) {
+                const rank = hand.cards[0].rank;
+                if (rank === 'A' || rank === '8') return 'split';
+                if (rank === '9' && dealerVal !== 7 && dealerVal !== 10 && dealerVal !== 11) return 'split';
+                if (rank === '7' && dealerVal <= 7) return 'split';
+                if (rank === '6' && dealerVal <= 6) return 'split';
+                if (rank === '4' && (dealerVal === 5 || dealerVal === 6)) return 'split';
+                if ((rank === '2' || rank === '3') && dealerVal <= 7) return 'split';
+            }
+
+            // 2. Evaluate Soft Hands (Aces valued at 11)
+            if (hasAce && hand.cards.length === 2) {
+                const nonAceVal = score - 11;
+                if (nonAceVal >= 8) return 'stand';
+                if (nonAceVal === 7) {
+                    if (dealerVal >= 3 && dealerVal <= 6 && player.bankroll >= hand.bet) return 'double';
+                    if (dealerVal === 2 || dealerVal === 7 || dealerVal === 8) return 'stand';
+                    return 'hit';
+                }
+                // Soft 13 to 17
+                if (dealerVal >= 5 && dealerVal <= 6 && player.bankroll >= hand.bet) return 'double';
+                return 'hit';
+            }
+
+            // 3. Evaluate Hard Hands
+            if (score >= 17) return 'stand';
+            if (score >= 13 && score <= 16) {
+                if (dealerVal >= 7) return 'hit';
+                return 'stand';
+            }
+            if (score === 12) {
+                if (dealerVal >= 4 && dealerVal <= 6) return 'stand';
+                return 'hit';
+            }
+            if (score === 11) {
+                if (player.bankroll >= hand.bet && hand.cards.length === 2) return 'double';
+                return 'hit';
+            }
+            if (score === 10) {
+                if (dealerVal < 10 && player.bankroll >= hand.bet && hand.cards.length === 2) return 'double';
+                return 'hit';
+            }
+            if (score === 9) {
+                if (dealerVal >= 3 && dealerVal <= 6 && player.bankroll >= hand.bet && hand.cards.length === 2) return 'double';
+                return 'hit';
+            }
+            return 'hit'; // Under 9
+        }
+
+        // Render all configured player grid seats (dynamic columns)
+        function renderSeats() {
+            const seatsContainer = document.getElementById('seats-container');
+            seatsContainer.innerHTML = '';
+
+            players.forEach((player, pIdx) => {
+                const isActive = (gameState === 'playing' && currentActorIdx === pIdx) || 
+                                 (gameState === 'betting' && currentActorIdx === pIdx);
+
+                let seatBorders = 'border-gray-800 bg-gray-950/40';
+                if (isActive) {
+                    seatBorders = 'active-seat-glow bg-yellow-500/10 border-yellow-500';
+                } else if (!player.isActiveThisRound && gameState !== 'betting') {
+                    seatBorders = 'border-gray-900 bg-gray-950/20 opacity-40';
+                }
+
+                // Compile markup for all hands (including split hand)
+                let handsMarkup = '';
+                player.hands.forEach((hand, hIdx) => {
+                    if (hand.status === 'inactive') return;
+                    
+                    const isHandActive = isActive && player.activeHandIdx === hIdx;
+                    const handHighlight = isHandActive ? 'ring-2 ring-yellow-500 bg-yellow-500/10' : 'bg-black/30';
+                    const label = player.hands.length > 1 ? `Hand ${hIdx+1}` : '';
+
+                    let cardsMarkup = '';
+                    hand.cards.forEach(card => {
+                        cardsMarkup += generateCardMarkup(card);
+                    });
+
+                    handsMarkup += `
+                        <div class="p-1.5 rounded-lg ${handHighlight} flex flex-col items-center">
+                            <div class="flex justify-between items-center w-full text-[10px] text-gray-400 mb-1 px-1">
+                                <span>${label}</span>
+                                <span class="bg-black/40 text-yellow-300 px-1 rounded font-bold">Pts: ${hand.score}</span>
+                            </div>
+                            <div class="flex flex-wrap justify-center gap-1 sm:gap-1.5 min-h-[82px] sm:min-h-[105px] w-full items-center font-semibold">
+                                ${cardsMarkup || '<span class="text-[11px] text-gray-600 py-4">No Cards</span>'}
+                            </div>
+                            <div class="text-[10px] mt-1 text-center font-bold text-yellow-500">
+                                Bet: $${hand.bet}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Generate Custom Badges for bot vs human
+                const playerBadge = player.isBot ? 
+                    `<span class="bg-amber-600/20 border border-amber-500/40 text-amber-400 text-[8px] font-extrabold px-1.5 py-0.2 rounded uppercase ml-1.5 tracking-wider">Bot AI</span>` : 
+                    `<span class="bg-blue-600/20 border border-blue-500/40 text-blue-400 text-[8px] font-extrabold px-1.5 py-0.2 rounded uppercase ml-1.5 tracking-wider">You</span>`;
+
+                // Set individual Seat markup
+                seatsContainer.innerHTML += `
+                    <div class="border-2 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between transition-all duration-300 ${seatBorders}">
+                        <!-- Top details -->
+                        <div class="flex justify-between items-start mb-2 border-b border-gray-800/60 pb-1.5">
+                            <div>
+                                <h4 class="font-bold text-xs truncate max-w-[80px] flex items-center">
+                                    ${player.name}
+                                </h4>
+                                <div class="mt-1">${playerBadge}</div>
+                                <span class="text-[10px] text-emerald-400 font-semibold">$${player.bankroll.toLocaleString()}</span>
+                            </div>
+                            <div class="flex flex-col items-end">
+                                ${gameState === 'betting' && player.tempBet > 0 ? `<span class="bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded text-[9px] font-bold">Bet: $${player.tempBet}</span>` : ''}
+                                ${gameState !== 'betting' && !player.isActiveThisRound ? `<span class="text-[9px] text-gray-500 uppercase font-bold">Out</span>` : ''}
+                                ${player.isActiveThisRound && gameState !== 'betting' ? `<span class="text-[9px] text-yellow-500 font-bold uppercase ${isActive ? 'animate-pulse' : ''}">Active</span>` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Card hands area -->
+                        <div class="space-y-2">
+                            ${handsMarkup || `
+                                <div class="text-center py-4 text-[11px] text-gray-500">
+                                    ${player.bankroll <= 0 ? 'Broke (No Cash)' : 'Ready'}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Render Dealer Side
+        function renderDealer() {
+            const dCardsDiv = document.getElementById('dealer-cards');
+            dCardsDiv.innerHTML = '';
+            
+            dealerHand.cards.forEach((card, idx) => {
+                const isHole = idx === 1 && !dealerHand.showHole;
+                dCardsDiv.innerHTML += generateCardMarkup(card, isHole, 'dealer');
+                if (isHole) {
+                    fillHoleCardMarkup(card, 'dealer');
+                }
+            });
+
+            // Update dealer score displays
+            if (dealerHand.showHole) {
+                dealerHand.score = calculateHandScore(dealerHand.cards);
+            } else if (dealerHand.cards.length > 0) {
+                dealerHand.score = calculateHandScore([dealerHand.cards[0]]);
+            } else {
+                dealerHand.score = 0;
+            }
+            document.getElementById('dealer-score').innerText = dealerHand.score;
+        }
+
+        // Main setup lobby navigation with Segmented toggle buttons (Human vs Bot)
+        function buildLobbyInputs() {
+            const container = document.getElementById('player-inputs-container');
+            container.innerHTML = '';
+
+            for (let i = 0; i < numSeats; i++) {
+                const isHuman = seatTypes[i] === 'human';
+                const humanClass = isHuman ? 'bg-yellow-500 text-black shadow-md' : 'text-gray-400 hover:text-white';
+                const botClass = !isHuman ? 'bg-amber-600 text-white shadow-md' : 'text-gray-400 hover:text-white';
+
+                container.innerHTML += `
+                    <div class="flex flex-wrap items-center justify-between gap-3 bg-gray-950/60 p-2.5 sm:p-3 rounded-lg border border-gray-800">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-yellow-500 text-black font-bold flex items-center justify-center text-xs">${i+1}</span>
+                            <input type="text" id="name-${i}" value="${isHuman ? 'Player ' + (i+1) : 'Bot ' + (i+1)}" max-length="12" class="bg-gray-900 border border-gray-800 text-white rounded px-2 py-1 text-xs sm:text-sm focus:outline-none focus:border-yellow-500 w-[100px] sm:w-[150px]" />
+                        </div>
+                        
+                        <!-- Toggle segmented selection button -->
+                        <div class="flex items-center bg-gray-900 border border-gray-800 rounded-lg p-0.5 relative z-10">
+                            <button type="button" onclick="setSeatPlayerType(${i}, 'human')" id="type-human-${i}" class="px-2.5 py-1.5 text-[11px] sm:text-xs rounded-md font-bold transition-all ${humanClass}">
+                                Human
+                            </button>
+                            <button type="button" onclick="setSeatPlayerType(${i}, 'bot')" id="type-bot-${i}" class="px-2.5 py-1.5 text-[11px] sm:text-xs rounded-md font-bold transition-all ${botClass}">
+                                Bot AI
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="text-gray-400">Buy-In:</span>
+                            <span class="text-emerald-400 font-bold">$1,000</span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Handle seat changes in lobby setup
+        const seatBtns = document.querySelectorAll('.seat-select-btn');
+        seatBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                seatBtns.forEach(b => b.classList.replace('bg-yellow-500', 'bg-gray-800'));
+                seatBtns.forEach(b => b.classList.replace('text-black', 'text-white'));
+                seatBtns.forEach(b => b.classList.replace('border-yellow-500', 'border-gray-700'));
+
+                btn.classList.replace('bg-gray-800', 'bg-yellow-500');
+                btn.classList.replace('text-white', 'text-black');
+                btn.classList.replace('border-gray-700', 'border-yellow-500');
+
+                numSeats = parseInt(btn.getAttribute('data-seats'));
+                buildLobbyInputs();
+            });
+        });
+
+        // Global seat switcher trigger
+        window.setSeatPlayerType = function(idx, type) {
+            seatTypes[idx] = type;
+            AudioEngine.playChip();
+            
+            const humanBtn = document.getElementById(`type-human-${idx}`);
+            const botBtn = document.getElementById(`type-bot-${idx}`);
+            const nameInput = document.getElementById(`name-${idx}`);
+
+            if (type === 'human') {
+                humanBtn.className = "px-2.5 py-1.5 text-xs rounded-md font-bold transition-all bg-yellow-500 text-black shadow-md";
+                botBtn.className = "px-2.5 py-1.5 text-xs rounded-md font-bold transition-all text-gray-400 hover:text-white";
+                if (nameInput.value.startsWith("Bot")) nameInput.value = `Player ${idx + 1}`;
+            } else {
+                humanBtn.className = "px-2.5 py-1.5 text-xs rounded-md font-bold transition-all text-gray-400 hover:text-white";
+                botBtn.className = "px-2.5 py-1.5 text-xs rounded-md font-bold transition-all bg-amber-600 text-white shadow-md";
+                if (nameInput.value.startsWith("Player")) nameInput.value = `Bot ${idx + 1}`;
+            }
+        };
+
+        // Start round execution
+        document.getElementById('start-game-btn').addEventListener('click', () => {
+            AudioEngine.init();
+            
+            // Reconfigure seats info from lobbies input
+            players = [];
+            for (let i = 0; i < numSeats; i++) {
+                const nameInp = document.getElementById(`name-${i}`);
+                const isBot = seatTypes[i] === 'bot';
+                players.push({
+                    id: i,
+                    name: nameInp ? nameInp.value : (isBot ? `Bot ${i+1}` : `Player ${i+1}`),
+                    bankroll: 1000,
+                    tempBet: 0,
+                    hands: [{ cards: [], score: 0, bet: 0, status: 'inactive' }],
+                    activeHandIdx: 0,
+                    insuranceBet: 0,
+                    isActiveThisRound: false,
+                    isBot: isBot
+                });
+            }
+
+            // Move views from lobby to board
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('footer-controls').classList.remove('hidden');
+            document.getElementById('lobby-btn').classList.remove('hidden');
+
+            startNewBettingRound();
+        });
+
+        // Betting Round Setup
+        function startNewBettingRound() {
+            gameState = 'betting';
+            currentActorIdx = 0;
+            dealerHand = { cards: [], score: 0, showHole: false };
+
+            players.forEach(p => {
+                p.tempBet = 0;
+                p.hands = [{ cards: [], score: 0, bet: 0, status: 'inactive' }];
+                p.activeHandIdx = 0;
+                p.insuranceBet = 0;
+                p.isActiveThisRound = false;
+            });
+
+            // If a player is completely broke, top them up automatically
+            players.forEach(p => {
+                if (p.bankroll <= 0) {
+                    p.bankroll = 500;
+                    showStatusBanner(`${p.name} was broke! Received $500 Top-up.`);
+                }
+            });
+
+            renderSeats();
+            renderDealer();
+            setupActiveBettingUI();
+        }
+
+        // Helper to configure control panel interactability state
+        function setControlsState(phase) {
+            const isControlLocked = phase === 'bot-action' || phase === 'disabled';
+            
+            document.querySelectorAll('.chip-btn').forEach(btn => {
+                if (isControlLocked) {
+                    btn.classList.add('pointer-events-none', 'opacity-40');
+                } else {
+                    btn.classList.remove('pointer-events-none', 'opacity-40');
+                }
+            });
+            
+            const clearBetBtn = document.getElementById('clear-bet-btn');
+            const confirmBetBtn = document.getElementById('confirm-bet-btn');
+            const hitBtn = document.getElementById('hit-btn');
+            const standBtn = document.getElementById('stand-btn');
+            const doubleBtn = document.getElementById('double-btn');
+            const splitBtn = document.getElementById('split-btn');
+            const insBtn = document.getElementById('insurance-btn');
+
+            if (phase === 'human-betting') {
+                document.getElementById('betting-controls').classList.remove('hidden');
+                document.getElementById('play-controls').classList.add('hidden');
+                clearBetBtn.disabled = false;
+                confirmBetBtn.disabled = false;
+            } else if (phase === 'human-playing') {
+                document.getElementById('betting-controls').classList.add('hidden');
+                document.getElementById('play-controls').classList.remove('hidden');
+                hitBtn.disabled = false;
+                standBtn.disabled = false;
+            } else if (phase === 'bot-action') {
+                if (gameState === 'betting') {
+                    document.getElementById('betting-controls').classList.remove('hidden');
+                    document.getElementById('play-controls').classList.add('hidden');
+                    clearBetBtn.disabled = true;
+                    confirmBetBtn.disabled = true;
+                } else if (gameState === 'playing') {
+                    document.getElementById('betting-controls').classList.add('hidden');
+                    document.getElementById('play-controls').classList.remove('hidden');
+                    hitBtn.disabled = true;
+                    standBtn.disabled = true;
+                    doubleBtn.disabled = true;
+                    splitBtn.disabled = true;
+                    insBtn.disabled = true;
+                }
+            } else {
+                clearBetBtn.disabled = true;
+                confirmBetBtn.disabled = true;
+                hitBtn.disabled = true;
+                standBtn.disabled = true;
+                doubleBtn.disabled = true;
+                splitBtn.disabled = true;
+                insBtn.disabled = true;
+            }
+        }
+
+        function setupActiveBettingUI() {
+            const activePlayer = players[currentActorIdx];
+            if (!activePlayer) return;
+
+            document.getElementById('game-stage-indicator').innerText = 'Wagering';
+            document.getElementById('active-actor-name').innerText = activePlayer.name + (activePlayer.isBot ? " (Bot AI)" : "");
+            document.getElementById('active-actor-bankroll').innerText = `$${activePlayer.bankroll.toLocaleString()}`;
+            document.getElementById('active-actor-bet').innerText = `$${activePlayer.tempBet}`;
+
+            renderSeats();
+
+            if (activePlayer.isBot) {
+                setControlsState('bot-action');
+                document.getElementById('betting-prompt').innerText = `${activePlayer.name} (AI) is placing a bet...`;
+                showStatusBanner(`${activePlayer.name} is calculating wager...`);
+                
+                // Simulating realistic AI betting delay
+                setTimeout(() => {
+                    if (gameState !== 'betting' || currentActorIdx !== activePlayer.id) return;
+                    
+                    // Bot picks wager based on bankroll
+                    const chipOptions = [10, 25, 50, 100].filter(val => val <= activePlayer.bankroll);
+                    const betVal = chipOptions.length > 0 ? chipOptions[Math.floor(Math.random() * chipOptions.length)] : 5;
+                    
+                    activePlayer.tempBet = Math.min(activePlayer.bankroll, betVal);
+                    activePlayer.bankroll -= activePlayer.tempBet;
+                    
+                    AudioEngine.playChip();
+                    document.getElementById('active-actor-bankroll').innerText = `$${activePlayer.bankroll.toLocaleString()}`;
+                    document.getElementById('active-actor-bet').innerText = `$${activePlayer.tempBet}`;
+                    renderSeats();
+                    
+                    setTimeout(() => {
+                        if (gameState !== 'betting' || currentActorIdx !== activePlayer.id) return;
+                        
+                        activePlayer.isActiveThisRound = true;
+                        activePlayer.hands[0] = {
+                            cards: [],
+                            score: 0,
+                            bet: activePlayer.tempBet,
+                            status: 'playing'
+                        };
+                        
+                        showStatusBanner(`${activePlayer.name} locked in a bet of $${activePlayer.tempBet}`);
+                        
+                        if (currentActorIdx < players.length - 1) {
+                            currentActorIdx++;
+                            setupActiveBettingUI();
+                        } else {
+                            dealInitialRound();
+                        }
+                    }, 1000);
+                }, 1200);
+            } else {
+                setControlsState('human-betting');
+                document.getElementById('betting-prompt').innerText = `Wager Chips for ${activePlayer.name}`;
+                showStatusBanner(`${activePlayer.name}, configure your bet`);
+            }
+        }
+
+        // Apply quick-touch listeners to all standard clickable elements
+        function addTouchAndClickListener(elementId, callback) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            
+            // Standard Touchend listener to make it ultra responsive on mobiles
+            el.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                AudioEngine.init();
+                callback(e);
+            });
+            // Fallback standard click for desktop mouse
+            el.addEventListener('click', (e) => {
+                callback(e);
+            });
+        }
+
+        // Setup dynamic listeners for chip buttons supporting touch & clicks
+        const chips = document.querySelectorAll('.chip-btn');
+        chips.forEach(chip => {
+            const processChipSelection = () => {
+                if (gameState !== 'betting') return;
+                const activePlayer = players[currentActorIdx];
+                if (activePlayer.isBot) return;
+                AudioEngine.init();
+
+                const valAttr = chip.getAttribute('data-val');
+
+                if (chip.id === 'chip-all-in' || valAttr === 'all-in') {
+                    if (activePlayer.bankroll > 0) {
+                        activePlayer.tempBet += activePlayer.bankroll;
+                        activePlayer.bankroll = 0;
+                        AudioEngine.playChip();
+                    }
+                } else {
+                    const val = parseInt(valAttr);
+                    if (activePlayer.bankroll >= val) {
+                        activePlayer.bankroll -= val;
+                        activePlayer.tempBet += val;
+                        AudioEngine.playChip();
+                    } else {
+                        showStatusBanner("Insufficient funds in player's wallet");
+                    }
+                }
+
+                // Update HUD
+                document.getElementById('active-actor-bankroll').innerText = `$${activePlayer.bankroll.toLocaleString()}`;
+                document.getElementById('active-actor-bet').innerText = `$${activePlayer.tempBet}`;
+                renderSeats();
+            };
+
+            chip.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                processChipSelection();
+            });
+            chip.addEventListener('click', () => {
+                processChipSelection();
+            });
+        });
+
+        // Confirm Bet and Advance to Next Player or Deal Hands
+        const handleConfirmBetAction = () => {
+            if (gameState !== 'betting') return;
+            const activePlayer = players[currentActorIdx];
+            if (activePlayer.isBot) return;
+
+            if (activePlayer.tempBet <= 0) {
+                showStatusBanner("Please place a minimum bet of $5 to join");
+                return;
+            }
+
+            activePlayer.isActiveThisRound = true;
+            activePlayer.hands[0] = {
+                cards: [],
+                score: 0,
+                bet: activePlayer.tempBet,
+                status: 'playing'
+            };
+
+            // Switch to next player in sequence to place bet
+            if (currentActorIdx < players.length - 1) {
+                currentActorIdx++;
+                setupActiveBettingUI();
+            } else {
+                dealInitialRound();
+            }
+        };
+
+        addTouchAndClickListener('confirm-bet-btn', handleConfirmBetAction);
+
+        addTouchAndClickListener('clear-bet-btn', () => {
+            if (gameState !== 'betting') return;
+            const activePlayer = players[currentActorIdx];
+            if (activePlayer.isBot) return;
+
+            activePlayer.bankroll += activePlayer.tempBet;
+            activePlayer.tempBet = 0;
+            
+            AudioEngine.playChip();
+            document.getElementById('active-actor-bankroll').innerText = `$${activePlayer.bankroll.toLocaleString()}`;
+            document.getElementById('active-actor-bet').innerText = `$0`;
+            renderSeats();
+        });
+
+        // Initial Dealing Sequence
+        function dealInitialRound() {
+            gameState = 'dealing';
+            document.getElementById('game-stage-indicator').innerText = 'Dealing';
+            document.getElementById('betting-controls').classList.add('hidden');
+            
+            showStatusBanner("Dealing cards...");
+
+            // Deal first card to all active players
+            let timeoutOffset = 0;
+            players.forEach((p) => {
+                if (!p.isActiveThisRound) return;
+                setTimeout(() => {
+                    p.hands[0].cards.push(drawCard());
+                    p.hands[0].score = calculateHandScore(p.hands[0].cards);
+                    AudioEngine.playCard();
+                    renderSeats();
+                }, timeoutOffset);
+                timeoutOffset += 200;
+            });
+
+            // Deal dealer first card
+            setTimeout(() => {
+                dealerHand.cards.push(drawCard());
+                AudioEngine.playCard();
+                renderDealer();
+            }, timeoutOffset);
+            timeoutOffset += 250;
+
+            // Deal second card to all active players
+            players.forEach((p) => {
+                if (!p.isActiveThisRound) return;
+                setTimeout(() => {
+                    p.hands[0].cards.push(drawCard());
+                    p.hands[0].score = calculateHandScore(p.hands[0].cards);
+                    AudioEngine.playCard();
+                    renderSeats();
+                }, timeoutOffset);
+                timeoutOffset += 200;
+            });
+
+            // Deal dealer hole card (hidden)
+            setTimeout(() => {
+                dealerHand.cards.push(drawCard());
+                AudioEngine.playCard();
+                renderDealer();
+                
+                // Finalize layout initialization
+                startPlayerActionsPhase();
+            }, timeoutOffset);
+        }
+
+        // Start Player actions turn-by-turn
+        function startPlayerActionsPhase() {
+            gameState = 'playing';
+            document.getElementById('game-stage-indicator').innerText = 'Actions';
+
+            // Find first active player
+            currentActorIdx = players.findIndex(p => p.isActiveThisRound);
+            if (currentActorIdx === -1) {
+                startDealerTurn();
+                return;
+            }
+
+            setupActivePlayerPlayUI();
+        }
+
+        function setupActivePlayerPlayUI() {
+            const activePlayer = players[currentActorIdx];
+            
+            // Check if actor index is valid or if we have passed all active players
+            if (!activePlayer || !activePlayer.isActiveThisRound) {
+                advancePlayerActionTurn();
+                return;
+            }
+
+            // Sync Stats Hud
+            document.getElementById('active-actor-name').innerText = activePlayer.name + (activePlayer.isBot ? " (Bot AI)" : "");
+            document.getElementById('active-actor-bankroll').innerText = `$${activePlayer.bankroll.toLocaleString()}`;
+            
+            const activeHand = activePlayer.hands[activePlayer.activeHandIdx];
+            document.getElementById('active-actor-bet').innerText = `$${activeHand.bet}`;
+
+            renderSeats();
+
+            if (activePlayer.isBot) {
+                setControlsState('bot-action');
+                showStatusBanner(`${activePlayer.name} (AI) is thinking...`);
+                
+                // Bot thinks before rendering decision
+                setTimeout(() => {
+                    if (gameState !== 'playing' || currentActorIdx !== activePlayer.id) return;
+                    runBotPlayingDecision(activePlayer, activeHand);
+                }, 1400);
+            } else {
+                setControlsState('human-playing');
+                toggleGameButtons(activePlayer, activeHand);
+                showStatusBanner(`Your Turn: ${activePlayer.name}. Touch an option below.`);
+            }
+        }
+
+        // Run bot actions iteratively
+        function runBotPlayingDecision(player, hand) {
+            if (hand.status !== 'playing') {
+                advancePlayerActionTurn();
+                return;
+            }
+
+            const decision = getBotDecision(hand, dealerHand.cards[0], player);
+            showStatusBanner(`${player.name} (AI) decides to: ${decision.toUpperCase()}`);
+
+            setTimeout(() => {
+                if (gameState !== 'playing' || currentActorIdx !== player.id || player.activeHandIdx !== player.hands.indexOf(hand)) return;
+
+                if (decision === 'split') {
+                    handleSplit();
+                    setTimeout(() => setupActivePlayerPlayUI(), 1000);
+                } else if (decision === 'double') {
+                    handleDouble();
+                } else if (decision === 'hit') {
+                    handleHit();
+                    // If bot hit but is still active under 21, loop decision
+                    if (hand.status === 'playing' && hand.score < 21) {
+                        setTimeout(() => {
+                            if (gameState !== 'playing' || currentActorIdx !== player.id) return;
+                            setupActivePlayerPlayUI();
+                        }, 1200);
+                    }
+                } else {
+                    handleStand();
+                }
+            }, 800);
+        }
+
+        // Check button rules
+        function toggleGameButtons(player, hand) {
+            // Double can only be made if bankroll allows and only has 2 initial cards
+            const doubleBtn = document.getElementById('double-btn');
+            if (hand.cards.length === 2 && player.bankroll >= hand.bet) {
+                doubleBtn.disabled = false;
+            } else {
+                doubleBtn.disabled = true;
+            }
+
+            // Split rules
+            const splitBtn = document.getElementById('split-btn');
+            const canSplit = player.hands.length === 1 && 
+                             hand.cards.length === 2 && 
+                             hand.cards[0].rank === hand.cards[1].rank && 
+                             player.bankroll >= hand.bet;
+            if (canSplit) {
+                splitBtn.disabled = false;
+            } else {
+                splitBtn.disabled = true;
+            }
+
+            // Insurance Option when Dealer shows Ace
+            const insuranceBtn = document.getElementById('insurance-btn');
+            const dUpcard = dealerHand.cards[0];
+            if (dUpcard.rank === 'A' && player.insuranceBet === 0 && player.bankroll >= (hand.bet / 2)) {
+                insuranceBtn.classList.remove('hidden');
+            } else {
+                insuranceBtn.classList.add('hidden');
+            }
+
+            // Instantly check for natural player Blackjack
+            if (hand.score === 21 && hand.cards.length === 2) {
+                hand.status = 'blackjack';
+                showStatusBanner(`Natural Blackjack! ${player.name}`);
+                setTimeout(() => {
+                    advancePlayerActionTurn();
+                }, 1000);
+            }
+        }
+
+        // Player Turn actions logic
+        function handleHit() {
+            const player = players[currentActorIdx];
+            const hand = player.hands[player.activeHandIdx];
+            
+            hand.cards.push(drawCard());
+            hand.score = calculateHandScore(hand.cards);
+            
+            AudioEngine.playCard();
+            renderSeats();
+            
+            if (!player.isBot) {
+                toggleGameButtons(player, hand);
+            }
+
+            if (hand.score > 21) {
+                hand.status = 'busted';
+                showStatusBanner(`${player.name} Busted! (${hand.score})`);
+                setTimeout(advancePlayerActionTurn, 800);
+            } else if (hand.score === 21) {
+                hand.status = 'stood';
+                setTimeout(advancePlayerActionTurn, 800);
+            }
+        }
+
+        function handleStand() {
+            const player = players[currentActorIdx];
+            const hand = player.hands[player.activeHandIdx];
+            
+            hand.status = 'stood';
+            advancePlayerActionTurn();
+        }
+
+        function handleDouble() {
+            const player = players[currentActorIdx];
+            const hand = player.hands[player.activeHandIdx];
+
+            if (player.bankroll < hand.bet) return;
+
+            player.bankroll -= hand.bet;
+            hand.bet *= 2;
+            
+            hand.cards.push(drawCard());
+            hand.score = calculateHandScore(hand.cards);
+            
+            AudioEngine.playCard();
+            renderSeats();
+
+            if (hand.score > 21) {
+                hand.status = 'busted';
+                showStatusBanner(`${player.name} Busted on Double! (${hand.score})`);
+            } else {
+                hand.status = 'stood';
+            }
+
+            setTimeout(advancePlayerActionTurn, 1000);
+        }
+
+        function handleSplit() {
+            const player = players[currentActorIdx];
+            const primaryHand = player.hands[0];
+
+            if (player.bankroll < primaryHand.bet) return;
+
+            player.bankroll -= primaryHand.bet;
+
+            // Generate split second hand
+            const secondHand = {
+                cards: [primaryHand.cards.pop()],
+                score: 0,
+                bet: primaryHand.bet,
+                status: 'playing'
+            };
+
+            // Add first card to both hands
+            primaryHand.cards.push(drawCard());
+            secondHand.cards.push(drawCard());
+
+            primaryHand.score = calculateHandScore(primaryHand.cards);
+            secondHand.score = calculateHandScore(secondHand.cards);
+
+            player.hands.push(secondHand);
+
+            AudioEngine.playCard();
+            renderSeats();
+            
+            if (!player.isBot) {
+                toggleGameButtons(player, primaryHand);
+            }
+            
+            showStatusBanner(`${player.name} split cards!`);
+        }
+
+        function handleInsurance() {
+            const player = players[currentActorIdx];
+            const hand = player.hands[player.activeHandIdx];
+
+            const insCost = hand.bet / 2;
+            if (player.bankroll < insCost) return;
+
+            player.bankroll -= insCost;
+            player.insuranceBet = insCost;
+
+            document.getElementById('insurance-btn').classList.add('hidden');
+            showStatusBanner("Insurance bet locked!");
+            renderSeats();
+            setupActivePlayerPlayUI();
+        }
+
+        // Advance player sequence control
+        function advancePlayerActionTurn() {
+            const player = players[currentActorIdx];
+
+            // If player has another split hand to act on
+            if (player.activeHandIdx < player.hands.length - 1) {
+                player.activeHandIdx++;
+                setupActivePlayerPlayUI();
+            } else {
+                // Find next active player in the row
+                let nextIdx = currentActorIdx + 1;
+                let foundNext = false;
+
+                while (nextIdx < players.length) {
+                    if (players[nextIdx].isActiveThisRound) {
+                        currentActorIdx = nextIdx;
+                        foundNext = true;
+                        break;
+                    }
+                    nextIdx++;
+                }
+
+                if (foundNext) {
+                    setupActivePlayerPlayUI();
+                } else {
+                    startDealerTurn();
+                }
+            }
+        }
+
+        // Dealer Phase
+        function startDealerTurn() {
+            gameState = 'dealer-turn';
+            document.getElementById('game-stage-indicator').innerText = 'Dealer Draw';
+            document.getElementById('play-controls').classList.add('hidden');
+
+            revealDealerHoleCard();
+            renderDealer();
+
+            // If all players are busted, dealer does not need to draw cards
+            const allBustedOrBJ = players.every(p => {
+                if (!p.isActiveThisRound) return true;
+                return p.hands.every(h => h.status === 'busted' || h.status === 'blackjack');
+            });
+
+            if (allBustedOrBJ) {
+                setTimeout(settleWagersAndPayouts, 1000);
+                return;
+            }
+
+            dealerDrawLoop();
+        }
+
+        function revealDealerHoleCard() {
+            dealerHand.showHole = true;
+            const hole = document.getElementById('hole-dealer');
+            if (hole) {
+                hole.classList.add('flipped');
+            }
+        }
+
+        function dealerDrawLoop() {
+            dealerHand.score = calculateHandScore(dealerHand.cards);
+            document.getElementById('dealer-score').innerText = dealerHand.score;
+
+            // Soft 17 Check
+            const isSoft17 = dealerHand.score === 17 && 
+                             dealerHand.cards.some(c => c.rank === 'A') && 
+                             (calculateHandScore(dealerHand.cards) === calculateHandScore(dealerHand.cards.map(c => c.rank === 'A' ? { ...c, value: 1 } : c)) + 10);
+
+            if (dealerHand.score < 17 || isSoft17) {
+                setTimeout(() => {
+                    dealerHand.cards.push(drawCard());
+                    AudioEngine.playCard();
+                    renderDealer();
+                    dealerDrawLoop();
+                }, 800);
+            } else {
+                setTimeout(settleWagersAndPayouts, 1000);
+            }
+        }
+
+        // Payout settlement & statistical audits
+        function settleWagersAndPayouts() {
+            const dScore = dealerHand.score;
+            let netWinnersCount = 0;
+            let roundBJs = 0;
+
+            const isDealerBJ = dealerHand.cards.length === 2 && calculateHandScore(dealerHand.cards) === 21;
+
+            players.forEach((player) => {
+                if (!player.isActiveThisRound) return;
+
+                // Check insurance bet if valid
+                if (player.insuranceBet > 0) {
+                    if (isDealerBJ) {
+                        player.bankroll += player.insuranceBet * 3; // return original + 2:1 payout
+                    }
+                }
+
+                player.hands.forEach((hand) => {
+                    if (hand.status === 'inactive') return;
+
+                    if (hand.status === 'busted') {
+                        // lost - money already deducted
+                    } else if (hand.status === 'blackjack') {
+                        roundBJs++;
+                        if (isDealerBJ) {
+                            // Push
+                            player.bankroll += hand.bet;
+                        } else {
+                            // BJ Pays 3 to 2 (Returns bet + 1.5x payout)
+                            player.bankroll += Math.floor(hand.bet * 2.5);
+                            netWinnersCount++;
+                            if (!player.isBot) {
+                                stats.wins++;
+                                stats.blackjacks++;
+                            }
+                        }
+                    } else {
+                        // Standard compare scores
+                        if (dScore > 21) {
+                            // Dealer busted, player wins!
+                            player.bankroll += hand.bet * 2;
+                            netWinnersCount++;
+                            if (!player.isBot) stats.wins++;
+                        } else if (hand.score > dScore) {
+                            // Player score beats dealer
+                            player.bankroll += hand.bet * 2;
+                            netWinnersCount++;
+                            if (!player.isBot) stats.wins++;
+                        } else if (hand.score < dScore) {
+                            // Lost
+                        } else {
+                            // Push
+                            player.bankroll += hand.bet;
+                        }
+                    }
+                });
+
+                if (!player.isBot && player.bankroll > stats.highestBalance) {
+                    stats.highestBalance = player.bankroll;
+                }
+            });
+
+            // Global stats logs (for human participants)
+            const humanParticipants = players.filter(p => p.isActiveThisRound && !p.isBot);
+            stats.played += humanParticipants.length;
+            
+            saveData();
+            updateStatsUI();
+
+            // Audio cues depending on round results
+            if (netWinnersCount > 0) {
+                AudioEngine.playWin();
+                showStatusBanner("Round Completed! Winners paid.");
+            } else {
+                AudioEngine.playLose();
+                showStatusBanner("Round settled. Better luck next hand!");
+            }
+
+            renderSeats();
+
+            // Automatically switch back to Betting state after delay
+            setTimeout(() => {
+                startNewBettingRound();
+            }, 5000);
+        }
+
+        // Toast Messages Banner
+        function showStatusBanner(text) {
+            const banner = document.getElementById('game-status-banner');
+            const bText = document.getElementById('banner-text');
+            bText.innerText = text;
+            
+            banner.classList.remove('opacity-0', 'scale-95');
+            banner.classList.add('opacity-100', 'scale-100');
+        }
+
+        // Hook general event templates
+        function setupUIEventHooks() {
+            // Lobby return
+            document.getElementById('lobby-btn').addEventListener('click', () => {
+                document.getElementById('lobby-screen').classList.remove('hidden');
+                document.getElementById('game-screen').classList.add('hidden');
+                document.getElementById('footer-controls').classList.add('hidden');
+                document.getElementById('lobby-btn').classList.add('hidden');
+            });
+
+            // Modals toggle events
+            const rulesModal = document.getElementById('rules-modal');
+            const statsModal = document.getElementById('stats-modal');
+
+            document.getElementById('rules-btn').addEventListener('click', () => rulesModal.classList.remove('hidden'));
+            document.getElementById('close-rules').addEventListener('click', () => rulesModal.classList.add('hidden'));
+
+            document.getElementById('stats-btn').addEventListener('click', () => {
+                updateStatsUI();
+                statsModal.classList.remove('hidden');
+            });
+            document.getElementById('close-stats').addEventListener('click', () => statsModal.classList.add('hidden'));
+            document.getElementById('close-stats-footer').addEventListener('click', () => statsModal.classList.add('hidden'));
+
+            // Click outside to close
+            window.addEventListener('click', (e) => {
+                if (e.target === rulesModal) rulesModal.classList.add('hidden');
+                if (e.target === statsModal) statsModal.classList.add('hidden');
+            });
+
+            // Mute Switch toggle
+            const muteBtn = document.getElementById('mute-btn');
+            const muteIcon = document.getElementById('mute-icon');
+            muteBtn.addEventListener('click', () => {
+                const isMuted = AudioEngine.toggleMute();
+                if (isMuted) {
+                    muteIcon.setAttribute('data-lucide', 'volume-x');
+                    showStatusBanner("Muted Sounds");
+                } else {
+                    muteIcon.setAttribute('data-lucide', 'volume-2');
+                    showStatusBanner("Unmuted Sounds");
+                }
+                lucide.createIcons();
+            });
+
+            // Reset Lifetime statistics
+            document.getElementById('reset-stats-btn').addEventListener('click', () => {
+                stats = { played: 0, wins: 0, blackjacks: 0, highestBalance: 1000 };
+                saveData();
+                updateStatsUI();
+                showStatusBanner("Statistics successfully reset!");
+            });
+
+            // Core control actions hooks
+            addTouchAndClickListener('hit-btn', () => {
+                const p = players[currentActorIdx];
+                if (p && !p.isBot) handleHit();
+            });
+            
+            addTouchAndClickListener('stand-btn', () => {
+                const p = players[currentActorIdx];
+                if (p && !p.isBot) handleStand();
+            });
+
+            addTouchAndClickListener('double-btn', () => {
+                const p = players[currentActorIdx];
+                if (p && !p.isBot) handleDouble();
+            });
+
+            addTouchAndClickListener('split-btn', () => {
+                const p = players[currentActorIdx];
+                if (p && !p.isBot) handleSplit();
+            });
+
+            addTouchAndClickListener('insurance-btn', () => {
+                const p = players[currentActorIdx];
+                if (p && !p.isBot) handleInsurance();
+            });
+        }
+
+        // On Load init
+        window.onload = function() {
+            lucide.createIcons();
+            createShoe();
+            loadSaveData();
+            buildLobbyInputs();
+            setupUIEventHooks();
+        };
+    </script>
+</body>
+</html>
